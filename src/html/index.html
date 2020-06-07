@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Video Poster</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    canvas{
+      max-width: 40vmin;
+      max-height: 40vmin;
+    }
+    video{
+      max-width: 40vmin;
+      max-height: 40vmin;
+    }
+    img{
+      max-width: 40vmin;
+      max-height: 40vmin;
+    }
+  </style>
+  <!-- <link rel="prefetch" href="/resource/fonts/NotoSansCJKtc-notscript/NotoSansCJKtc-Thin.otf" as="font" crossorigin> -->
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/1.1.2/tailwind.min.css" integrity="sha256-bCQF5OufWlWM/MW9mCb/eDibvff1W8BNq9ZK69C8FSI=" crossorigin="anonymous" />
+</head>
+<body>
+
+  <div id="app" style="display: none;">
+    <div v-if="SDK">
+      <div class="flex">
+        <textarea class="bg-teal-100 border b-black p-3"  @input="onUpdatePoster()" v-model="spec.text" placeholder="text" cols="30" rows="10"></textarea>
+        <chrome-picker class="bg-teal-100 border b-black p-3"   v-model="colorpicker" @input="spec.bg = colorpicker.hex; onUpdatePoster()"></chrome-picker>
+        <div>
+            Seconds:
+            <input step="0.001" type="number" v-model="spec.videoDuration">
+        </div>
+
+      </div>
+      <!-- <textarea  @input="onUpdatePoster()" v-model="spec.author" placeholder="author" cols="30" rows="10"></textarea> -->
+      <!-- <input @input="onUpdatePoster()" class="bg-teal-100 p-3 border b-black" v-model="spec.bg" type="text"></input> -->
+
+      <button class="bg-teal-100 border b-black p-3"  @click="makeVideo()">Make Video</button>
+      <button class="bg-teal-100 border b-black p-3"  @click="makePic()">Make Pic</button>
+    </div>
+    <div class="fixed top-0 right-0 m-5">
+      <div v-if="!SDK">
+        Loading.....
+      </div>
+      <canvas ref="canvas">
+      </canvas>
+    </div>
+    <div class="logs">
+      <div v-for="log in logs" :key="log.id" v-html="log.html"></div>
+    </div>
+    <div class="fixed bottom-0 right-0 m-5">
+      <button @click="goTop">Go Top</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/circular-progress/0.2.3/circular-progress.min.js"> </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vue-color/2.7.0/vue-color.min.js"></script>
+
+
+  <script src="/sdk/sdk.js"></script>
+
+  <script>
+
+  </script>
+
+  <script>
+    var app = new Vue({
+      components: {
+        'chrome-picker': VueColor.Chrome
+      },
+      el: '#app',
+      data () {
+        return {
+          progress: 0,
+          logs: [],
+          SDK: false,
+          socket: false,
+          colorpicker: {},
+          spec: {
+            site: location.origin,
+            text: 'hello from hong kong',
+            bg: '#ffffff',
+            videoDuration: 3
+          }
+        }
+      },
+      mounted () {
+        this.initSystem()
+        this.$el.style.display = 'block'
+      },
+      methods: {
+        goTop () {
+          window.scrollTo(0, 0)
+        },
+        async initSystem () {
+          this.SDK = await window.UniversalWebGL.makeSDK({
+            canvas: this.$refs['canvas'],
+            spec: this.spec
+          })
+          this.SDK.start()
+          this.listen()
+        },
+        onUpdatePoster () {
+          if (this.SDK) {
+            this.SDK.refreshSpec({ spec: this.spec })
+          }
+        },
+        makePic () {
+          let loader = this.makeLoadBox()
+          this.SDK.makePoster({
+            onProgress: ({ progress }) => {
+              loader.onUpdate(progress)
+            }
+          }).then((info) => {
+            let strURL = `<a class="link-box" target="_blank" href="${info.url}">${info.url}</a>`
+            let strPicture = `<img autoplay loop controls class="img-box" playsinline src="${info.url}"></img>`
+            loader.appendHTML(strURL + strPicture)
+          })
+        },
+        makeVideo () {
+          let loader = this.makeLoadBox()
+          this.SDK.makeVideo({
+            onProgress: ({ progress }) => {
+              loader.onUpdate(progress)
+            }
+          }).then((info) => {
+            let strURL = `<a class="link-box" target="_blank" href="${info.url}">${info.url}</a>`
+            let strVideo = `<video autoplay loop controls class="video-box" playsinline src="${info.url}"></video>`
+            loader.appendHTML(strURL + strVideo)
+          })
+        },
+        makeLoadBox () {
+          var progressUI = new CircularProgress({
+            radius: 70,
+            strokeStyle: '#2fb734',
+            lineCap: 'round',
+            lineWidth: 20,
+            font: '22px NotoSans, sans-serif'
+          });
+          let rID = `_${(Math.random() * 1000000).toFixed(0)}`
+          let element = progressUI.el
+          this.logs.unshift({
+            id: Math.random(),
+            html: `<div id="${rID}"></div>`
+          })
+          this.$nextTick(() => {
+            document.querySelector(`#${rID}`).appendChild(element)
+          })
+          let val = 0
+          return {
+            appendHTML: (v) => {
+              let d = document.createElement('div')
+              d.innerHTML += v
+              setTimeout(() => {
+                document.querySelector(`#${rID}`).appendChild(d)
+              }, 10)
+            },
+            onUpdate: (v) => {
+              if (v > val) {
+                val = v
+                progressUI.update(v * 100)
+              }
+            }
+          }
+        },
+        listen () {
+          // this.SDK.socket.on('log', (item) => {
+          //   this.logs.unshift(item)
+          //   this.$forceUpdate()
+          //   setTimeout(() => {
+          //     window.scrollTo(0, 0)
+          //   })
+          // })
+        }
+      }
+    })
+  </script>
+</body>
+</html>
