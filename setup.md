@@ -61,14 +61,15 @@ sudo apt-get install build-essential libcairo2-dev libpango1.0-dev libjpeg-dev l
 npm i;
 
 # dockewr
-
 docker rm --force docker-render-gl
 
 # delete image
 docker rmi --force wonglok831/docker-render-gl
 
 # build image
+docker rmi --force wonglok831/docker-render-gl
 docker build -t wonglok831/docker-render-gl .
+docker push wonglok831/docker-render-gl
 
 # run image
 docker run --publish 8080:3123 --detach --name docker-render-gl wonglok831/docker-render-gl
