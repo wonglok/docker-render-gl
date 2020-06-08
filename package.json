@@ -19,8 +19,8 @@
     "github": "git add .; git commit -am \"github backup\"; git push -u origin master",
     "github-deploy": "npm run github; ./deploy.sh",
     "create-eb": "eb init -p docker webgl-universal; eb create webgl-universal --single",
-    "deploy": "eb deploy",
-    "sim": "eb local run --port 5000"
+    "deploy": "npm run github; eb deploy --debug",
+    "preview": "eb local run --port 5000"
   },
   "author": "",
   "license": "ISC",
