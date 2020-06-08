@@ -1,0 +1,14 @@
+{
+  "AWSEBDockerrunVersion": "1",
+  "Image": {
+    "Name": "wonglok831/docker-render-gl",
+    "Update": "true"
+  },
+  "Ports": [
+    {
+      "ContainerPort": 3123,
+      "HostPort": 3123
+    }
+  ],
+  "Logging": "/var/log/nodejs/nodejs.log"
+}

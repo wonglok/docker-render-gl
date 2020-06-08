@@ -17,7 +17,9 @@
     "pm2restart": "npm run pm2kill; npm run pm2create;",
     "log": "tail -f ./.cache/logs/combined.log",
     "github": "git add .; git commit -am \"github backup\"; git push -u origin master",
-    "deploy": "npm run github; ./deploy.sh"
+    "github-deploy": "npm run github; ./deploy.sh",
+    "deploy": "npm run sim; eb deploy;",
+    "sim": "eb local run --port 5000"
   },
   "author": "",
   "license": "ISC",
